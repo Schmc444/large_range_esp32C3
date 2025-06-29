@@ -4,11 +4,11 @@
 #include <time.h>
 
 // WiFi credentials
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "Castillo Fuerte";
+const char* password = "salmos18:2";
 
 // Server endpoint
-const char* serverURL = "http://your-server.com/solar-log";
+const char* serverURL = "aschie.mooo.com:4545";
 
 // Time configuration
 const char* ntpServer = "pool.ntp.org";
