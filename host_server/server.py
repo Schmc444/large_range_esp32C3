@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
 import json
 import os
+import sys
+import signal
+import argparse
 from datetime import datetime
 import logging
 
@@ -9,6 +12,20 @@ app = Flask(__name__)
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Global flag for graceful shutdown
+shutdown_flag = False
+
+def signal_handler(sig, frame):
+    """Handle Ctrl+C gracefully"""
+    global shutdown_flag
+    print('\n🛑 Shutting down Solar Monitor Server gracefully...')
+    print('📊 Server stopped. Log files preserved.')
+    shutdown_flag = True
+    sys.exit(0)
+
+# Register signal handler for Ctrl+C
+signal.signal(signal.SIGINT, signal_handler)
 
 # Directory to store log files
 LOG_DIR = "solar_logs"
@@ -119,6 +136,37 @@ def list_log_files():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print(f"Solar Power Monitor Server Starting...")
-    print(f"Log files will be stored in: {os.path.abspath(LOG_DIR)}")
-    app.run(host='0.0.0.0', port=4545, debug=True)
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Solar Power Monitor Server')
+    parser.add_argument('--daemon', '-d', action='store_true', 
+                       help='Run in background (daemon mode)')
+    parser.add_argument('--port', '-p', type=int, default=5000,
+                       help='Port to run server on (default: 5000)')
+    parser.add_argument('--host', type=str, default='0.0.0.0',
+                       help='Host to bind to (default: 0.0.0.0)')
+    args = parser.parse_args()
+    
+    if args.daemon:
+        # Run in daemon mode (background)
+        print(f"🚀 Starting Solar Power Monitor Server in daemon mode...")
+        print(f"📡 Server running on http://{args.host}:{args.port}")
+        print(f"📁 Log files stored in: {os.path.abspath(LOG_DIR)}")
+        print(f"🔍 Check status at: http://{args.host}:{args.port}/solar-log/status")
+        print(f"⚡ To stop: pkill -f 'python.*server.py' or find the process and kill it")
+        
+        # Redirect stdout to a log file in daemon mode
+        log_file = os.path.join(LOG_DIR, 'server.log')
+        sys.stdout = open(log_file, 'a')
+        sys.stderr = open(log_file, 'a')
+        
+        app.run(host=args.host, port=args.port, debug=False)
+    else:
+        # Run in interactive mode
+        print("🌞   SOLAR POWER MONITOR SERVER")
+        print(f"📡 Server starting on http://{args.host}:{args.port}")
+        print(f"📁 Log files will be stored in: {os.path.abspath(LOG_DIR)}")
+        print(f"🔍 Status endpoint: http://{args.host}:{args.port}/solar-log/status")
+        print(f"📋 List files: http://{args.host}:{args.port}/solar-log/files")
+        print("🛑 Press Ctrl+C to stop the server gracefully")
+        
+        app.run(host=args.host, port=args.port, debug=True)
